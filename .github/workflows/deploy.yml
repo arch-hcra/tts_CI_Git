@@ -34,11 +34,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/tts_CI_Git/myapp:${{ github.sha }} .
+          docker build -t ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }} .
       
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/tts_CI_Git/myapp:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }}
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -56,5 +56,5 @@ jobs:
         run: |
           echo "$KUBECONFIG_DATA" > kubeconfig
           export KUBECONFIG=$(pwd)/kubeconfig
-          kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_CI_Git/myapp:${{ github.sha }} -n default
+          kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }} -n default
           kubectl rollout status deployment/myapp -n default --timeout=300s
