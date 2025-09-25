@@ -32,11 +32,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build Docker image
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/myapp:${{ github.event.inputs.branch }}
-          docker build -t $IMAGE_NAME .
-          docker push $IMAGE_NAME
+          docker build -t ghcr.io/${{ github.repository_owner }}/tts_CI_Git/my-apps:${{ github.sha }} .
+      
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/tts_CI_Git/my-apps:${{ github.sha }}
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
