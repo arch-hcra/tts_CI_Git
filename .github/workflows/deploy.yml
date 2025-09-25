@@ -43,11 +43,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }} .
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> 8560dddaef0a2e797f5cf258e82cc0d791988719
       - name: Push Docker image
         run: |
           docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }}
@@ -70,7 +66,6 @@ jobs:
           export KUBECONFIG=$PWD/kubeconfig
 
       - name: Deploy to Kubernetes
-<<<<<<< HEAD
         run: |
           kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }} -n default
           if ! kubectl get deployment myapp -n default &> /dev/null; then
@@ -79,12 +74,3 @@ jobs:
           fi
           kubectl rollout status deployment/myapp -n default --timeout=300s
 
-=======
-        env:
-          KUBECONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
-        run: |
-          echo "$KUBECONFIG_DATA" > kubeconfig
-          export KUBECONFIG=$(pwd)/kubeconfig
-          kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }} -n default
-          kubectl rollout status deployment/myapp -n default --timeout=300s
->>>>>>> 8560dddaef0a2e797f5cf258e82cc0d791988719
