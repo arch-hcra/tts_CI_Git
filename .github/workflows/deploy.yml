@@ -55,4 +55,4 @@ jobs:
           echo "$KUBECONFIG_DATA" > kubeconfig
           export KUBECONFIG=$(pwd)/kubeconfig
           kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_CI_Git/myapp:${{ github.sha }} -n default
-          kubectl rollout status deployment/my-apps -n default --timeout=300s
+          kubectl rollout status deployment/myapp -n default --timeout=300s
