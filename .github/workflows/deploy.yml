@@ -12,7 +12,7 @@ on:
         required: true
         type: choice
         options:
-          - vps-kube    
+          - vps-kube
           - local-kube
         default: 'vps-kube'
 
@@ -26,12 +26,6 @@ jobs:
           ref: ${{ github.event.inputs.branch }}
           fetch-depth: 0
 
-      - name: Get commit SHA from branch
-        run: echo "COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -39,22 +33,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build Docker image
+      - name: Build and push Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ env.COMMIT_SHA }} .
-
-      - name: Push Docker image
-        run: |
-          docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ env.COMMIT_SHA }}
-
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: 'latest'
+          docker build -t ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }} .
+          docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }}
 
       - name: Configure kubeconfig
         run: |
-          
           if [ "${{ github.event.inputs.k8s_context }}" == "vps-kube" ]; then
             echo "${{ secrets.KUBE_CONFIG_VPS }}" > kubeconfig
           elif [ "${{ github.event.inputs.k8s_context }}" == "local-kube" ]; then
@@ -63,23 +48,10 @@ jobs:
             echo "Unknown k8s_context: ${{ github.event.inputs.k8s_context }}"
             exit 1
           fi
-
-          ls -la kubeconfig
-          if [ ! -s kubeconfig ]; then  
-            echo "ERROR: kubeconfig file is empty or missing!"
-            exit 1
-          fi
-          echo "File size: $(wc -c < kubeconfig) bytes"
           export KUBECONFIG=$PWD/kubeconfig
-          kubectl config current-context || echo "ERROR: current-context not set - fix your secret YAML"
-         
-          
-
-
 
       - name: Deploy to Kubernetes
         run: |
-          export KUBECONFIG=$PWD/kubeconfig
-          kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ env.COMMIT_SHA }} -n default
+          kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }} -n default
           kubectl rollout status deployment/myapp -n default --timeout=300s
 
