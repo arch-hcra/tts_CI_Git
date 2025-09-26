@@ -54,16 +54,28 @@ jobs:
 
       - name: Configure kubeconfig
         run: |
+          
           if [ "${{ github.event.inputs.k8s_context }}" == "vps-kube" ]; then
-            echo "${{ secrets.KUBE_CONFIG_VPS }}" | > kubeconfig
+            echo "${{ secrets.KUBE_CONFIG_VPS }}" > kubeconfig
           elif [ "${{ github.event.inputs.k8s_context }}" == "local-kube" ]; then
-            echo "${{ secrets.KUBE_CONFIG_LOCAL }}" | > kubeconfig
+            echo "${{ secrets.KUBE_CONFIG_LOCAL }}" > kubeconfig
           else
             echo "Unknown k8s_context: ${{ github.event.inputs.k8s_context }}"
             exit 1
           fi
+
+          ls -la kubeconfig
+          if [ ! -s kubeconfig ]; then  
+            echo "ERROR: kubeconfig file is empty or missing!"
+            exit 1
+          fi
+          echo "File size: $(wc -c < kubeconfig) bytes"
           export KUBECONFIG=$PWD/kubeconfig
-          kubectl config current-context
+          kubectl config current-context || echo "ERROR: current-context not set - fix your secret YAML"
+         
+          
+
+
 
       - name: Deploy to Kubernetes
         run: |
