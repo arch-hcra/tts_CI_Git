@@ -54,30 +54,20 @@ jobs:
 
       - name: Configure kubeconfig
         run: |
-          
           if [ "${{ github.event.inputs.k8s_context }}" == "vps-kube" ]; then
-            echo "${{ secrets.KUBE_CONFIG_VPS }}" | base64 -d > kubeconfig
+            echo "${{ secrets.KUBE_CONFIG_VPS }}" | > kubeconfig
           elif [ "${{ github.event.inputs.k8s_context }}" == "local-kube" ]; then
-            echo "${{ secrets.KUBE_CONFIG_LOCAL }}" | base64 -d > kubeconfig
+            echo "${{ secrets.KUBE_CONFIG_LOCAL }}" | > kubeconfig
           else
             echo "Unknown k8s_context: ${{ github.event.inputs.k8s_context }}"
             exit 1
           fi
-          
-         
           export KUBECONFIG=$PWD/kubeconfig
-          
-         
           kubectl config current-context
 
       - name: Deploy to Kubernetes
         run: |
-      
           export KUBECONFIG=$PWD/kubeconfig
-          
-        
           kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ env.COMMIT_SHA }} -n default
-          
-      
           kubectl rollout status deployment/myapp -n default --timeout=300s
 
