@@ -6,34 +6,34 @@ on:
       branch:
         description: 'Branch to build'
         required: true
-        default: 'master' 
+        default: 'main'
       k8s_context:
-        description: 'Kubernetes context to use (e.g., vps-kube, local-kube)'
+        description: 'Kubernetes context/server to use'
         required: true
-        type: choice 
+        type: choice
         options:
-          - vps-kube
+          - vps-kube    
           - local-kube
-        default: 'vps-cluster'
+        default: 'vps-kube'
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code from selected branch
-        uses: actions/checkout@v4  
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch }}
-          fetch-depth: 0  
+          fetch-depth: 0
 
       - name: Get commit SHA from branch
-        run: echo "COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV  
+        run: echo "COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3 
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3  
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -48,33 +48,36 @@ jobs:
           docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ env.COMMIT_SHA }}
 
       - name: Set up kubectl
-        uses: azure/setup-kubectl@v4  
+        uses: azure/setup-kubectl@v4
         with:
           version: 'latest'
 
-      - name: Configure kubeconfig and switch context
-        env:
-          KUBECONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
+      - name: Configure kubeconfig
         run: |
-        
-          echo "${KUBECONFIG_DATA}" > kubeconfig 
-          export KUBECONFIG=$(pwd)/kubeconfig
+          
+          if [ "${{ github.event.inputs.k8s_context }}" == "vps-kube" ]; then
+            echo "${{ secrets.KUBE_CONFIG_VPS }}" | base64 -d > kubeconfig
+          elif [ "${{ github.event.inputs.k8s_context }}" == "local-kube" ]; then
+            echo "${{ secrets.KUBE_CONFIG_LOCAL }}" | base64 -d > kubeconfig
+          else
+            echo "Unknown k8s_context: ${{ github.event.inputs.k8s_context }}"
+            exit 1
+          fi
           
          
-          kubectl config use-context ${{ github.event.inputs.k8s_context }}
+          export KUBECONFIG=$PWD/kubeconfig
           
          
           kubectl config current-context
 
       - name: Deploy to Kubernetes
-        env:
-          KUBECONFIG: ${{ runner.temp }}/kubeconfig 
         run: |
+      
+          export KUBECONFIG=$PWD/kubeconfig
           
-          export KUBECONFIG=${{ env.KUBECONFIG }}  
-          
-
+        
           kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ env.COMMIT_SHA }} -n default
-
+          
+      
           kubectl rollout status deployment/myapp -n default --timeout=300s
 
