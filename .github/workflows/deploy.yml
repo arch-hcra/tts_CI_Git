@@ -35,8 +35,11 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }} .
-          docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }}
+          IMAGE_TAG=${{ github.event.inputs.branch }}
+          docker build -t ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG .
+          docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG
+          docker tag ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:latest
+          docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:latest
 
       - name: Configure kubeconfig
         run: |
