@@ -1,14 +1,18 @@
-name: Build and Deploy to Kubernetes
+name: Manual Build and Deploy Pipeline
 
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to build'
+        description: 'Выберите ветку для сборки и деплоя'
         required: true
+        type: choice
+        options:
+          - master
+          - dev
         default: 'master'
-      k8s_context:
-        description: 'Kubernetes context/server to use'
+      k8s_server:
+        description: 'Выберите сервер для деплоя'
         required: true
         type: choice
         options:
@@ -17,7 +21,7 @@ on:
         default: 'vps-kube'
 
 jobs:
-  build-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code from selected branch
@@ -39,28 +43,24 @@ jobs:
           docker build -t ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG .
           docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG
 
-      - name: Configure kubeconfig
+      - name: Configure kubeconfig for selected server
         run: |
-          if [ "${{ github.event.inputs.k8s_context }}" == "vps-kube" ]; then
+          if [ "${{ github.event.inputs.k8s_server }}" == "vps-kube" ]; then
             echo "${{ secrets.KUBE_CONFIG_VPS }}" > kubeconfig
-          elif [ "${{ github.event.inputs.k8s_context }}" == "local-kube" ]; then
+          elif [ "${{ github.event.inputs.k8s_server }}" == "local-kube" ]; then
             echo "${{ secrets.KUBE_CONFIG_LOCAL }}" > kubeconfig
           else
-            echo "Unknown k8s_context: ${{ github.event.inputs.k8s_context }}"
+            echo "Неизвестный сервер: ${{ github.event.inputs.k8s_server }}"
             exit 1
           fi
           export KUBECONFIG=$PWD/kubeconfig
-          kubectl config current-context || (echo "ERROR: current-context not set - fix your secret YAML"; exit 1)
+          kubectl config current-context || (echo "Ошибка: current-context не установлен — проверьте секрет"; exit 1)
 
       - name: Deploy to Kubernetes
         run: |
           export KUBECONFIG=$PWD/kubeconfig
           IMAGE_TAG=${{ github.event.inputs.branch }}
-          if [ "${{ github.event.inputs.branch }}" == "master" ]; then
-            DEPLOYMENT="myapp-master"
-          else
-            DEPLOYMENT="myapp-dev"
-          fi
+          DEPLOYMENT="myapp"
           kubectl set image deployment/$DEPLOYMENT myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG -n default
           kubectl rollout status deployment/$DEPLOYMENT -n default --timeout=300s
 
