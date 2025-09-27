@@ -38,8 +38,6 @@ jobs:
           IMAGE_TAG=${{ github.event.inputs.branch }}
           docker build -t ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG .
           docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG
-          docker tag ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:latest
-          docker push ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:latest
 
       - name: Configure kubeconfig
         run: |
@@ -57,6 +55,12 @@ jobs:
       - name: Deploy to Kubernetes
         run: |
           export KUBECONFIG=$PWD/kubeconfig
-          kubectl set image deployment/myapp myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:${{ github.sha }} -n default
-          kubectl rollout status deployment/myapp -n default --timeout=300s
+          IMAGE_TAG=${{ github.event.inputs.branch }}
+          if [ "${{ github.event.inputs.branch }}" == "master" ]; then
+            DEPLOYMENT="myapp-master"
+          else
+            DEPLOYMENT="myapp-dev"
+          fi
+          kubectl set image deployment/$DEPLOYMENT myapp=ghcr.io/${{ github.repository_owner }}/tts_ci_git/myapp:$IMAGE_TAG -n default
+          kubectl rollout status deployment/$DEPLOYMENT -n default --timeout=300s
 
