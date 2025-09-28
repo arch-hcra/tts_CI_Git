@@ -18,7 +18,7 @@ def verify_password(username, password):
 @app.route('/')
 @auth.login_required
 def hello():
-    return '<p>Hello, protected World!</p>'
+    return 'Hello, protected World!'
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8078)
