@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello():
-    return 'Hello, protected World!'
+    return 'Hello, my Flask in kube!'
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8078, debug=True)
